@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIS - Comunidad Inteligente Sostenible | Los Guayos, Carabobo</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          esmeralda: {
+            DEFAULT: '#10b981',
+            dark: '#059669',
+            light: '#d1fae5'
+          },
+          tecno: {
+            DEFAULT: '#0284c7',
+            dark: '#075985',
+            light: '#e0f2fe'
+          },
+          oscuro: '#0f172a'
+        },
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif']
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Leaflet CSS/JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  #mapa { height: 560px; width: 100%; z-index: 0; }
+  .leaflet-popup-content-wrap { border-radius: 10px; }
+  .chat-scroll::-webkit-scrollbar { width: 6px; }
+  .chat-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 999px; }
+
+  .filtro-chip {
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .filtro-chip[data-active="true"] {
+    color: #fff;
+  }
+  .filtro-chip[data-active="false"] {
+    background: #fff !important;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+
+  @keyframes bounce-in {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .chat-window { animation: bounce-in 0.18s ease-out; }
+
+  .typing-dot {
+    animation: typing 1.2s infinite ease-in-out;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+</style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ============ BANNER SUPERIOR ============ -->
+<header class="w-full bg-oscuro">
+  <img src="https://github.com/jhonmalorne/CIS/blob/main/Imagen%20superior%20CIS.png?raw=true"
+       alt="CIS - Comunidad Inteligente Sostenible"
+       class="w-full h-auto object-cover" />
+</header>
+
+<!-- ============ BARRA DE ENLACES DIRECTOS ============ -->
+<nav class="bg-oscuro border-b border-slate-700 sticky top-0 z-[500] shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-center gap-2">
+
+    <a href="https://whatsapp.com/channel/0029VbCN9F9Bqbr6yvRiYF3L" target="_blank" rel="noopener"
+       class="flex items-center gap-2 bg-esmeralda hover:bg-esmeralda-dark text-white text-sm font-semibold px-4 py-2 rounded-full transition">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm5.8 14.14c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.12.11-1.8-.11-.42-.13-.96-.3-1.65-.6-2.9-1.25-4.8-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.26-.29.57-.36.76-.36l.55.01c.17.01.41-.06.64.49.24.57.81 1.97.88 2.11.07.14.12.3.02.49-.09.19-.14.3-.28.46-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.27.71 1.17 1.53 1.9 1.05.94 1.94 1.23 2.21 1.37.27.14.43.12.59-.07.16-.19.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.26.13.43.19.5.3.07.11.07.61-.17 1.29z"/></svg>
+      Canal WhatsApp
+    </a>
+
+    <a href="https://concertacionciudadana.com/" target="_blank" rel="noopener"
+       class="flex items-center gap-2 bg-tecno hover:bg-tecno-dark text-white text-sm font-semibold px-4 py-2 rounded-full transition">
+      🌐 Concertación Ciudadana
+    </a>
+
+    <a href="https://jhonmalorne.github.io/ConcertacionAAS/" target="_blank" rel="noopener"
+       class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-full transition border border-white/20">
+      ➕ Módulo AAS
+    </a>
+
+    <a href="https://jhonmalorne.github.io/ConcertacionCODERE/" target="_blank" rel="noopener"
+       class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-full transition border border-white/20">
+      🏆 Módulo CODERE
+    </a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="bg-gradient-to-br from-oscuro via-slate-800 to-tecno-dark py-14 px-4">
+  <div class="max-w-5xl mx-auto text-center">
+    <span class="inline-block bg-esmeralda/20 text-esmeralda-light border border-esmeralda/40 text-xs font-semibold px-4 py-1.5 rounded-full mb-4">
+      Propuesta municipal · Municipio Los Guayos, Carabobo
+    </span>
+    <h1 class="text-3xl md:text-5xl font-extrabold text-white leading-tight">
+      CIS <span class="text-esmeralda">·</span> Comunidad Inteligente Sostenible
+    </h1>
+    <p class="mt-4 text-slate-300 max-w-2xl mx-auto text-base md:text-lg">
+      Una plataforma georreferenciada para conocer, organizar y fortalecer cada sector de Los Guayos,
+      impulsada por Concertación Ciudadana.
+    </p>
+  </div>
+</section>
+
+<!-- ============ MAPA ============ -->
+<main class="max-w-7xl mx-auto px-4 py-10">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
+    <div>
+      <h2 class="text-2xl font-bold text-oscuro">Mapa Interactivo del Municipio</h2>
+      <p class="text-slate-500 text-sm mt-1">Filtra por categoría para explorar los puntos georreferenciados de Los Guayos.</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div id="filtros" class="flex flex-wrap gap-2 mb-4"></div>
+
+  <!-- Mapa -->
+  <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-md">
+    <div id="mapa"></div>
+  </div>
+
+  <!-- Leyenda -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 text-xs text-slate-600">
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-500 inline-block"></span>Sectores</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-500 inline-block"></span>Espacios deportivos</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-400 inline-block"></span>Parques</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>Plazas</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-600 inline-block"></span>Iglesias</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-600 inline-block"></span>Centros de salud</div>
+    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-900 inline-block"></span>Escuelas</div>
+  </div>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-oscuro text-slate-400 text-center py-6 text-sm mt-8">
+  CIS · Comunidad Inteligente Sostenible — Propuesta de Concertación Ciudadana para el Municipio Los Guayos, Carabobo.
+</footer>
+
+<!-- ============ CHATBOT FLOTANTE: BALDWYN ============ -->
+<div id="chat-toggle" class="fixed bottom-5 right-5 z-[600] cursor-pointer group">
+  <div class="w-16 h-16 rounded-full bg-esmeralda shadow-xl flex items-center justify-center border-4 border-white overflow-hidden hover:scale-105 transition">
+    <img src="https://github.com/jhonmalorne/CIS/blob/main/baldwyn.jpg?raw=true" alt="Baldwyn" class="w-full h-full object-cover" />
+  </div>
+  <span class="absolute -top-1 -right-1 w-4 h-4 bg-tecno rounded-full border-2 border-white"></span>
+</div>
+
+<div id="chat-window" class="chat-window hidden fixed bottom-24 right-5 z-[600] w-[92vw] max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" style="height: 480px;">
+  <div class="bg-oscuro px-4 py-3 flex items-center gap-3">
+    <img src="https://github.com/jhonmalorne/CIS/blob/main/baldwyn.jpg?raw=true" alt="Baldwyn" class="w-9 h-9 rounded-full object-cover border-2 border-esmeralda" />
+    <div class="flex-1">
+      <p class="text-white text-sm font-semibold leading-tight">Baldwyn</p>
+      <p class="text-esmeralda-light text-xs leading-tight">Asistente Virtual CIS</p>
+    </div>
+    <button id="chat-close" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+  </div>
+
+  <div id="chat-messages" class="chat-scroll flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50"></div>
+
+  <div class="p-3 border-t border-slate-200 bg-white flex gap-2">
+    <input id="chat-input" type="text" placeholder="Escribe tu mensaje..."
+           class="flex-1 text-sm border border-slate-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-esmeralda" />
+    <button id="chat-send" class="bg-esmeralda hover:bg-esmeralda-dark text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   1. DATOS GEOGRÁFICOS
+   ================================================================== */
+const CATEGORIAS = {
+  sectores: {
+    label: "Sectores",
+    color: "#64748b",
+    puntos: [
+      { nombre: "Isla la Culebra", coords: [10.13751280394414, -67.87617448260613] },
+      { nombre: "Las Aguitas", coords: [10.168405748765897, -67.92675035074483] },
+      { nombre: "Quintas 2000", coords: [10.176443778680454, -67.91540970943271] },
+      { nombre: "Urbanización Los Cerritos", coords: [10.169727523412744, -67.90905841009014] },
+      { nombre: "El Roble", coords: [10.156993217647262, -67.90957026093425] },
+      { nombre: "Pirital", coords: [10.109134629718676, -67.89196137572675] },
+      { nombre: "Charal", coords: [10.106979918820857, -67.90762547541154] }
+    ]
+  },
+  deportivos: {
+    label: "Espacios Deportivos",
+    color: "#f97316",
+    puntos: [
+      { nombre: "Campo de Béisbol Papelón Escalona", coords: [10.174650937244905, -67.93939856673788] },
+      { nombre: "Campo de Béisbol Piedras Negras", coords: [10.165479956554355, -67.9176043494843] }
+    ]
+  },
+  parques: {
+    label: "Parques",
+    color: "#4ade80",
+    puntos: [
+      { nombre: "Parque Las Agüitas Sector 3", coords: [10.171199541568972, -67.92854788998577] },
+      { nombre: "Parque El Jabillo", coords: [10.181245254436794, -67.9306930502042] }
+    ]
+  },
+  plazas: {
+    label: "Plazas",
+    color: "#fbbf24",
+    puntos: [
+      { nombre: "Plaza El Roble", coords: [10.158447525183375, -67.91115378325121] },
+      { nombre: "Plaza Bolívar de Los Guayos", coords: [10.189136752652574, -67.93894104975423] }
+    ]
+  },
+  iglesias: {
+    label: "Iglesias",
+    color: "#9333ea",
+    puntos: [
+      { nombre: "Iglesia Charal", coords: [10.106036929204528, -67.9057042081331] },
+      { nombre: "Iglesia Los Cerritos", coords: [10.17154970771635, -67.90710165135745] },
+      { nombre: "Iglesia Los Guayos", coords: [10.188631826171134, -67.93672399731201] }
+    ]
+  },
+  salud: {
+    label: "Centros de Salud",
+    color: "#dc2626",
+    puntos: [
+      { nombre: "Seguro Social de Paraparal", coords: [10.184618184339332, -67.9160775065972] },
+      { nombre: "CDI Paraparal", coords: [10.18596306069789, -67.91954969527667] }
+    ]
+  },
+  escuelas: {
+    label: "Escuelas",
+    color: "#1e3a8a",
+    puntos: [
+      { nombre: "Escuela Batalla de Junín", coords: [10.176519282645351, -67.93235465936776] },
+      { nombre: "Escuela Anexo Rural 6", coords: [10.187538851366272, -67.93722441739372] }
+    ]
+  }
+};
+
+/* ==================================================================
+   2. INICIALIZACIÓN DEL MAPA
+   ================================================================== */
+const mapa = L.map('mapa').setView([10.160, -67.915], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(mapa);
+
+// Capa GeoJSON de delimitación municipal
+const GEOJSON_URL = "https://raw.githubusercontent.com/jhonmalorne/CIS/main/Mapa%20de%20Los%20guayos.geojson";
+fetch(GEOJSON_URL)
+  .then(res => {
+    if (!res.ok) throw new Error("No se pudo cargar el GeoJSON");
+    return res.json();
+  })
+  .then(data => {
+    L.geoJSON(data, {
+      style: {
+        color: "#0284c7",
+        weight: 2,
+        fillColor: "#0284c7",
+        fillOpacity: 0.06
+      }
+    }).addTo(mapa);
+  })
+  .catch(err => console.warn("Delimitación municipal no disponible:", err.message));
+
+// Grupos de capas por categoría
+const capasPorCategoria = {};
+
+function crearIcono(color) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="background:${color};width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    popupAnchor: [0, -8]
+  });
+}
+
+Object.entries(CATEGORIAS).forEach(([key, cat]) => {
+  const grupo = L.layerGroup();
+  cat.puntos.forEach(p => {
+    const marker = L.marker(p.coords, { icon: crearIcono(cat.color) });
+    marker.bindPopup(`<strong>${p.nombre}</strong><br><span style="color:${cat.color}">${cat.label}</span>`);
+    marker.addTo(grupo);
+  });
+  grupo.addTo(mapa);
+  capasPorCategoria[key] = grupo;
+});
+
+/* ==================================================================
+   3. FILTROS DE CAPA
+   ================================================================== */
+const filtrosContainer = document.getElementById('filtros');
+
+Object.entries(CATEGORIAS).forEach(([key, cat]) => {
+  const chip = document.createElement('button');
+  chip.className = 'filtro-chip text-xs font-semibold px-3 py-1.5 rounded-full';
+  chip.dataset.active = "true";
+  chip.dataset.key = key;
+  chip.style.background = cat.color;
+  chip.textContent = cat.label;
+
+  chip.addEventListener('click', () => {
+    const activo = chip.dataset.active === "true";
+    if (activo) {
+      mapa.removeLayer(capasPorCategoria[key]);
+      chip.dataset.active = "false";
+    } else {
+      mapa.addLayer(capasPorCategoria[key]);
+      chip.dataset.active = "true";
+      chip.style.background = cat.color;
+    }
+  });
+
+  filtrosContainer.appendChild(chip);
+});
+
+/* ==================================================================
+   4. CHATBOT BALDWYN (Gemini API)
+   ================================================================== */
+const GEMINI_API_KEY = "AQ.Ab8RN6KG_aXYs2fkG12xIoue20mETl_3HNN3YJh56piNnIoPvw";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+const BALDWYN_SYSTEM_PROMPT = "Eres Baldwyn, el asistente inteligente de la propuesta municipal CIS (Comunidad Inteligente Sostenible) del movimiento Concertación Ciudadana en Los Guayos, aliados de María Corina Machado. Tu objetivo es responder con civismo, cortesía, enfoque en desarrollo sostenible, apoyo a las comunidades y orientación sobre la plataforma web.";
+
+const chatToggle = document.getElementById('chat-toggle');
+const chatWindow = document.getElementById('chat-window');
+const chatClose = document.getElementById('chat-close');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+
+let historialChat = [];
+
+function abrirChat() {
+  chatWindow.classList.remove('hidden');
+  if (chatMessages.children.length === 0) {
+    agregarMensaje("bot", "¡Hola! Soy Baldwyn 👋 Tu asistente virtual de CIS. Puedo ayudarte a entender la plataforma, el mapa de Los Guayos o resolver dudas sobre nuestra propuesta. ¿En qué te ayudo hoy?");
+  }
+}
+
+chatToggle.addEventListener('click', abrirChat);
+chatClose.addEventListener('click', () => chatWindow.classList.add('hidden'));
+
+function agregarMensaje(remitente, texto) {
+  const wrapper = document.createElement('div');
+  wrapper.className = remitente === "user" ? "flex justify-end" : "flex justify-start";
+
+  const burbuja = document.createElement('div');
+  burbuja.className = remitente === "user"
+    ? "bg-esmeralda text-white text-sm rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%]"
+    : "bg-white border border-slate-200 text-slate-700 text-sm rounded-2xl rounded-bl-sm px-4 py-2 max-w-[80%] shadow-sm";
+  burbuja.textContent = texto;
+
+  wrapper.appendChild(burbuja);
+  chatMessages.appendChild(wrapper);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function mostrarEscribiendo() {
+  const wrapper = document.createElement('div');
+  wrapper.id = "typing-indicator";
+  wrapper.className = "flex justify-start";
+  wrapper.innerHTML = `
+    <div class="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1 shadow-sm">
+      <span class="typing-dot w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+      <span class="typing-dot w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+      <span class="typing-dot w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+    </div>`;
+  chatMessages.appendChild(wrapper);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function quitarEscribiendo() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+async function enviarMensaje() {
+  const texto = chatInput.value.trim();
+  if (!texto) return;
+
+  agregarMensaje("user", texto);
+  historialChat.push({ role: "user", parts: [{ text: texto }] });
+  chatInput.value = "";
+  mostrarEscribiendo();
+
+  try {
+    const contents = [
+      { role: "user", parts: [{ text: BALDWYN_SYSTEM_PROMPT }] },
+      { role: "model", parts: [{ text: "Entendido, estoy listo para ayudar a la comunidad de Los Guayos." }] },
+      ...historialChat
+    ];
+
+    const response = await fetch(GEMINI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents })
+    });
+
+    if (!response.ok) throw new Error(`Error de la API: ${response.status}`);
+
+    const data = await response.json();
+    const respuestaTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      || "Disculpa, no pude procesar tu mensaje en este momento. ¿Puedes reformularlo?";
+
+    quitarEscribiendo();
+    agregarMensaje("bot", respuestaTexto);
+    historialChat.push({ role: "model", parts: [{ text: respuestaTexto }] });
+
+  } catch (error) {
+    quitarEscribiendo();
+    agregarMensaje("bot", "Ocurrió un problema conectando con el servicio de IA. Por favor intenta de nuevo en unos minutos.");
+    console.error("Error Baldwyn:", error);
+  }
+}
+
+chatSend.addEventListener('click', enviarMensaje);
+chatInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') enviarMensaje();
+});
+</script>
+
+</body>
+</html>
