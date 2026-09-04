@@ -347,9 +347,15 @@ Object.entries(CATEGORIAS).forEach(([key, cat]) => {
    4. CHATBOT BALDWYN (Gemini API)
    ================================================================== */
 const GEMINI_API_KEY = "AQ.Ab8RN6KG_aXYs2fkG12xIoue20mETl_3HNN3YJh56piNnIoPvw";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Nota: las claves con prefijo "AQ." (Auth Key) sólo funcionan con la nueva Interactions API,
+// no con el endpoint clásico "generateContent".
+const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 const BALDWYN_SYSTEM_PROMPT = "Eres Baldwyn, el asistente inteligente de la propuesta municipal CIS (Comunidad Inteligente Sostenible) del movimiento Concertación Ciudadana en Los Guayos, aliados de María Corina Machado. Tu objetivo es responder con civismo, cortesía, enfoque en desarrollo sostenible, apoyo a las comunidades y orientación sobre la plataforma web.";
+
+// id de la última interacción, usado para mantener la conversación con estado en el servidor
+let previousInteractionId = null;
 
 const chatToggle = document.getElementById('chat-toggle');
 const chatWindow = document.getElementById('chat-window');
@@ -357,8 +363,6 @@ const chatClose = document.getElementById('chat-close');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSend = document.getElementById('chat-send');
-
-let historialChat = [];
 
 function abrirChat() {
   chatWindow.classList.remove('hidden');
@@ -404,37 +408,62 @@ function quitarEscribiendo() {
   if (el) el.remove();
 }
 
+// Extrae el texto de la respuesta del modelo a partir del arreglo "steps" de la Interactions API
+function extraerTextoDeSteps(steps) {
+  if (!Array.isArray(steps)) return null;
+  for (const step of steps) {
+    if (step.type === "model_output" && Array.isArray(step.content)) {
+      const bloqueTexto = step.content.find(c => c.type === "text" && c.text);
+      if (bloqueTexto) return bloqueTexto.text;
+    }
+  }
+  return null;
+}
+
 async function enviarMensaje() {
   const texto = chatInput.value.trim();
   if (!texto) return;
 
   agregarMensaje("user", texto);
-  historialChat.push({ role: "user", parts: [{ text: texto }] });
   chatInput.value = "";
   mostrarEscribiendo();
 
   try {
-    const contents = [
-      { role: "user", parts: [{ text: BALDWYN_SYSTEM_PROMPT }] },
-      { role: "model", parts: [{ text: "Entendido, estoy listo para ayudar a la comunidad de Los Guayos." }] },
-      ...historialChat
-    ];
+    // En el primer turno anteponemos el prompt de sistema; los turnos siguientes
+    // se encadenan con previous_interaction_id, que ya conserva el contexto en el servidor.
+    const esPrimerTurno = !previousInteractionId;
+    const entrada = esPrimerTurno
+      ? `${BALDWYN_SYSTEM_PROMPT}\n\nMensaje del ciudadano: ${texto}`
+      : texto;
+
+    const body = {
+      model: GEMINI_MODEL,
+      input: entrada
+    };
+    if (previousInteractionId) body.previous_interaction_id = previousInteractionId;
 
     const response = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents })
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY
+      },
+      body: JSON.stringify(body)
     });
 
-    if (!response.ok) throw new Error(`Error de la API: ${response.status}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Error de la API (${response.status}): ${errorBody}`);
+    }
 
     const data = await response.json();
-    const respuestaTexto = data?.candidates?.[0]?.content?.parts?.[0]?.text
+    previousInteractionId = data.id || previousInteractionId;
+
+    const respuestaTexto = extraerTextoDeSteps(data.steps)
       || "Disculpa, no pude procesar tu mensaje en este momento. ¿Puedes reformularlo?";
 
     quitarEscribiendo();
     agregarMensaje("bot", respuestaTexto);
-    historialChat.push({ role: "model", parts: [{ text: respuestaTexto }] });
 
   } catch (error) {
     quitarEscribiendo();
